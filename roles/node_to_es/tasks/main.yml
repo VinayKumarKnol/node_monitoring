@@ -1,2 +1,36 @@
 ---
-# tasks file for node_to_es
+- name: Check if nodes are reachable
+  command: ssh -q -i {{ key_file_location }} {{ user }}@{{ inventory_hostname }} exit
+  delegate_to: localhost
+  register: ssh_status
+
+- name: Get A unique value for document
+  command: uuidgen -t
+  delegate_to: localhost
+  register: unique_value
+
+- name: Get current date
+  command: date -u +%Y-%m-%d
+  delegate_to: localhost
+  register: current_date
+
+- name: Check if index exists
+  uri:
+    url: {{ elk_url }}/{{ index_name }}-{{ current_date.stdout }}
+    method: HEAD
+    body_format: json
+    status_code: 200
+  delegate_to: localhost
+  register: index_present
+  when: ssh_status.rc == 0
+
+- name: Create index with configuration file  
+  uri:
+    url: {{ elk_url }}/{{ index_name }}-{{ current_date }}
+    method: PUT
+    src: index_config.json
+  delegate_to: localhost
+  register: index_created
+  when: index_present.status != 200
+
+
