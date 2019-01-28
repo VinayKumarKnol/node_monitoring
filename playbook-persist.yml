@@ -2,4 +2,4 @@
   gather_facts: false
   ignore_errors: yes
   roles:
-    - { role: ansible-dcos-ping }
+    - { role: node_to_es }
