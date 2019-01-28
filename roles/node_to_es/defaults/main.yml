@@ -1,7 +1,8 @@
 ---
+
 key_file_location: /home/knoldus/VINAY_BIN/openvpn/yung-key
 user: giang
-elk_url: http://monit-es-rigel.storefrontremote.com
+elk_url: "http://monit-es-rigel.storefrontremote.com"
 index_name: node-status
 
 
