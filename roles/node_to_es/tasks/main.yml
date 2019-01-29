@@ -1,6 +1,6 @@
 ---
 - name: Check if nodes are reachable
-  command: ssh -q -i {{ key_file_location }} {{ user }}@{{ inventory_hostname }} exit
+  command: "ssh -i {{ key_file_location }} {{ user }}@{{ inventory_hostname }} exit"
   delegate_to: localhost
   register: ssh_status
 
@@ -16,21 +16,22 @@
 
 - name: Check if index exists
   uri:
-    url: {{ elk_url }}/{{ index_name }}-{{ current_date.stdout }}
+    url: "{{ elk_url }}{{ index_name }}-{{ current_date.stdout }}"
     method: HEAD
     body_format: json
     status_code: 200
   delegate_to: localhost
   register: index_present
-  when: ssh_status.rc == 0
+  when: ssh_status is success
 
 - name: Create index with configuration file  
   uri:
-    url: {{ elk_url }}/{{ index_name }}-{{ current_date }}
+    url: "{{ elk_url }}{{ index_name }}-{{ current_date.stdout }}"
     method: PUT
-    src: index_config.json
+    body: "{{ lookup('file', '{{ role_path }}/files/index_config.json')}}"
+    body_format: json   
   delegate_to: localhost
   register: index_created
-  when: index_present.status != 200
+  when: index_present is skipped and  ssh_status is success
 
 
