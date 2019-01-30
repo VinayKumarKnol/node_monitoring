@@ -14,15 +14,19 @@
   delegate_to: localhost
   register: current_date
 
+- name: Get Timestamp
+  command: date -u +"%Y-%m-%dT%T.%3N"
+  delegate_to: localhost
+  register: timestamp
+
 - name: Check if index exists
   uri:
     url: "{{ elk_url }}{{ index_name }}-{{ current_date.stdout }}"
     method: HEAD
     body_format: json
-    status_code: 200
   delegate_to: localhost
   register: index_present
-  when: ssh_status is success
+  when: ssh_status is success 
 
 - name: Create index with configuration file  
   uri:
@@ -32,6 +36,32 @@
     body_format: json   
   delegate_to: localhost
   register: index_created
-  when: index_present is skipped and  ssh_status is success
+  when: index_present is failed and  ssh_status is success
+
+- name: Insert data into Elasticsearch about Alive nodes
+  uri:
+    url: "{{ elk_url }}{{ index_name}}-{{ current_date.stdout }}/record/{{ unique_value.stdout }}"
+    method: POST
+    body: >
+      {"ip": "{{ inventory_hostname  }}", "status": 1, "date": "{{ timestamp.stdout }}" }
+    body_format: json
+    status_code: 200, 201
+  delagate_to: localhost
+  when: ssh_status is success
+
+- name: Insert data into Elasticsearch about Dead nodes
+  connection: local
+  uri:
+    url: "{{ elk_url }}{{ index_name}}-{{ current_date.stdout }}/record/{{ unique_value.stdout }}"
+    method: POST
+    body: >
+      {"ip": "{{ inventory_hostname  }}", "status": 0, "date": "{{ timestamp.stdout }}" }
+    body_format: json
+    status_code: 200, 201
+  delagate_to: localhost
+  when: ssh_status.rc !=0
+
+
+
 
 
